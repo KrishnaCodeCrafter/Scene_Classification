@@ -1,0 +1,85 @@
+import os
+import torch
+import torch.nn.functional as F
+from torchvision import transforms, models, datasets
+from PIL import Image
+import matplotlib.pyplot as plt
+
+# ======================================================
+# CONFIGURATION
+# ======================================================
+MODEL_PATH = "./best_efficientnet_b3_scene.pth"  # your trained model
+MODEL_NAME = "efficientnet_b3"
+DATA_DIR = "./scene_dataset_final"                # reference for class names
+TEST_DIR = "./test"                               # folder with test images
+device = "cuda" if torch.cuda.is_available() else "cpu"
+
+# ======================================================
+# IMAGE TRANSFORM (must match training)
+# ======================================================
+transform = transforms.Compose([
+    transforms.Resize((300, 300)),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                         std=[0.229, 0.224, 0.225]),
+])
+
+# ======================================================
+# LOAD CLASS NAMES
+# ======================================================
+test_ds = datasets.ImageFolder(os.path.join(DATA_DIR, "test"), transform=transform)
+class_names = test_ds.classes
+
+# ======================================================
+# LOAD MODEL
+# ======================================================
+print(f"🔧 Loading model: {MODEL_NAME}")
+model = getattr(models, MODEL_NAME)(weights=None)
+in_features = model.classifier[1].in_features
+model.classifier[1] = torch.nn.Linear(in_features, len(class_names))
+model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+model = model.to(device)
+model.eval()
+print("✅ Model loaded successfully.\n")
+
+# ======================================================
+# PREDICTION FUNCTION
+# ======================================================
+def predict_image(image_path):
+    image = Image.open(image_path).convert("RGB")
+    img_tensor = transform(image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        outputs = model(img_tensor)
+        probs = F.softmax(outputs, dim=1)
+        confidence, pred_class = torch.max(probs, 1)
+    
+    predicted_label = class_names[pred_class.item()]
+    confidence_value = confidence.item() * 100
+    return predicted_label, confidence_value
+
+# ======================================================
+# RUN PREDICTIONS FOR ALL IMAGES IN TEST FOLDER
+# ======================================================
+if not os.path.exists(TEST_DIR):
+    print(f"⚠️ Test folder not found: {TEST_DIR}")
+else:
+    image_files = [f for f in os.listdir(TEST_DIR)
+                   if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+
+    if not image_files:
+        print("⚠️ No images found in test folder.")
+    else:
+        print(f"📁 Found {len(image_files)} images in '{TEST_DIR}'\n")
+        for img_file in image_files:
+            img_path = os.path.join(TEST_DIR, img_file)
+            label, conf = predict_image(img_path)
+
+            print(f"🖼️ {img_file} → {label} ({conf:.2f}% confidence)")
+
+            # Display image with label
+            image = Image.open(img_path)
+            plt.imshow(image)
+            plt.title(f"{label} ({conf:.2f}%)")
+            plt.axis("off")
+            plt.show()

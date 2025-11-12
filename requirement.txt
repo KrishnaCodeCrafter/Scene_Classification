@@ -1,0 +1,11 @@
+torch>=2.2.0
+torchvision>=0.17.0
+tqdm
+Pillow
+numpy
+matplotlib
+scikit-learn
+seaborn
+tensorboard
+imagehash
+transformers

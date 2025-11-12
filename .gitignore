@@ -1,0 +1,10 @@
+__pycache__/
+*.pth
+*.pt
+runs/
+scene_dataset_final/
+scene_dataset_clean/
+*.csv
+.DS_Store
+.env
+scene_dataset/
