@@ -1,0 +1,13 @@
+{
+  "class_names": [
+    "Arctic_Polar",
+    "Desert_SemiArid",
+    "Forest_Ecosystem",
+    "Freshwater_Ecosystem",
+    "Human_Settlements",
+    "Marine_Ocean",
+    "Mountain_Alpine",
+    "Savanna_Grassland",
+    "Wildlife_Reserve"
+  ]
+}

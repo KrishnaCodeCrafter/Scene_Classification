@@ -1,21 +1,36 @@
 import os
+import json
 import torch
 import torch.nn.functional as F
-from torchvision import transforms, models, datasets
+from torchvision import transforms, models
 from PIL import Image
 import matplotlib.pyplot as plt
 
 # ======================================================
 # CONFIGURATION
 # ======================================================
-MODEL_PATH = "./best_efficientnet_b3_scene.pth"  # your trained model
+MODEL_PATH = "./best_efficientnet_b3_scene.pth"  # trained model
 MODEL_NAME = "efficientnet_b3"
-DATA_DIR = "./scene_dataset_final"                # reference for class names
-TEST_DIR = "./test"                               # folder with test images
+CLASS_JSON = "./class_names.json"                # JSON file containing class names
+TEST_DIR = "./test"                              # folder with test images
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # ======================================================
-# IMAGE TRANSFORM (must match training)
+# LOAD CLASS NAMES FROM JSON
+# ======================================================
+if not os.path.exists(CLASS_JSON):
+    raise FileNotFoundError(f"❌ Could not find {CLASS_JSON}. Please create it first.")
+
+with open(CLASS_JSON, "r") as f:
+    data = json.load(f)
+class_names = data.get("class_names", [])
+if not class_names:
+    raise ValueError("❌ No class names found in class_names.json")
+
+print(f"✅ Loaded {len(class_names)} classes from {CLASS_JSON}: {class_names}\n")
+
+# ======================================================
+# IMAGE TRANSFORMS (same as training)
 # ======================================================
 transform = transforms.Compose([
     transforms.Resize((300, 300)),
@@ -23,12 +38,6 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406],
                          std=[0.229, 0.224, 0.225]),
 ])
-
-# ======================================================
-# LOAD CLASS NAMES
-# ======================================================
-test_ds = datasets.ImageFolder(os.path.join(DATA_DIR, "test"), transform=transform)
-class_names = test_ds.classes
 
 # ======================================================
 # LOAD MODEL
@@ -43,7 +52,7 @@ model.eval()
 print("✅ Model loaded successfully.\n")
 
 # ======================================================
-# PREDICTION FUNCTION
+# PREDICT FUNCTION
 # ======================================================
 def predict_image(image_path):
     image = Image.open(image_path).convert("RGB")
