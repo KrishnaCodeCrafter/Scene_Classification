@@ -1,5 +1,4 @@
 __pycache__/
-*.pth
 *.pt
 runs/
 scene_dataset_final/
